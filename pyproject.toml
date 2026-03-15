@@ -1,0 +1,25 @@
+[build-system]
+requires = ["hatchling >= 1.27"]
+build-backend = "hatchling.build"
+
+[project]
+name = "engine_data_analyzer"
+version = "0.0.1"
+authors = [
+    { name = "Skand Hurkat" },
+]
+description = "Analyze data from airplane engine monitors"
+readme = "README.md"
+requires-python = ">=3.10"
+license = "GPL-3.0"
+
+[project.scripts]
+eda = "engine_data_analyzer.cli:main()"
+
+[project.optional-dependencies]
+dev = [
+    "black",
+    "mypy",
+    "isort",
+    "flake8",
+]
