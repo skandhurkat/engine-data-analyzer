@@ -12,6 +12,9 @@ description = "Analyze data from airplane engine monitors"
 readme = "README.md"
 requires-python = ">=3.10"
 license = "GPL-3.0"
+dependencies = [
+    "pandas"
+]
 
 [project.scripts]
 eda = "engine_data_analyzer.cli:main()"
