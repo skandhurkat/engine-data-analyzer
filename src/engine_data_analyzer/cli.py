@@ -2,6 +2,7 @@ import argparse as ap
 import pandas
 import logging
 from rich.logging import RichHandler
+from rich.console import Console
 import numpy as np
 
 
@@ -120,7 +121,7 @@ def main() -> None:
     logging.basicConfig(
         level=log_level,
         format="%(message)s",
-        handlers=[RichHandler()],
+        handlers=[RichHandler(console=Console(stderr=True))],
     )
 
     dataframe = pandas.read_csv(
