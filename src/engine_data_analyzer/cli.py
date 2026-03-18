@@ -95,7 +95,7 @@ def fill_missing_gps_time(dataframe: pandas.DataFrame) -> pandas.DataFrame:
         (missing_gps_time_session_times @ fit).astype(gps_time_type).flatten(),
         index=dataframe.index[gps_na_idx],
         columns=["GPS Date & Time"],
-    )
+    )["GPS Date & Time"].dt.round("s")
 
     dataframe.update(interpolated_gps_times)
 
