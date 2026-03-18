@@ -53,6 +53,10 @@ def fill_missing_gps_time(dataframe: pandas.DataFrame) -> pandas.DataFrame:
 
     logger.debug("Session has %d NA and %d not-NA values", len_gps_na, len_gps_not_na)
 
+    if len_gps_not_na == 0 or len_gps_na == 0:
+        logger.debug("Cannot interpolate, skipping")
+        return dataframe
+
     session_time = np.concat(
         (
             dataframe["Session Time"][gps_not_na]
