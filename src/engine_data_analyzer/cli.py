@@ -206,7 +206,7 @@ def main() -> None:
         hours_str = f"{hours:02d}h" if hours > 0 else ""
         minutes_str = f"{minutes:02d}m" if minutes > 0 else ""
         secs_str = f"{secs:.0f}s"
-        engine_on = is_engine_on(dataframe)
+        engine_on = is_engine_on(session_df)
         if not engine_on:
             logger.debug("Engine not turned on this session, skipping")
             continue
