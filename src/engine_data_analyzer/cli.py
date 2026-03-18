@@ -51,14 +51,6 @@ def fill_missing_gps_time(dataframe: pandas.DataFrame) -> pandas.DataFrame:
     gps_na_idx = dataframe["GPS Date & Time"].isna()
     len_gps_na = gps_na_idx.sum()
 
-    if len_gps_not_na == 0:
-        logger.debug("No GPS Date & Time found, skipping")
-        return dataframe
-
-    if len_gps_na == 0:
-        logger.debug("No entries are NA, skipping")
-        return dataframe
-
     logger.debug("Session has %d NA and %d not-NA values", len_gps_na, len_gps_not_na)
 
     session_time = np.concat(
@@ -79,7 +71,18 @@ def fill_missing_gps_time(dataframe: pandas.DataFrame) -> pandas.DataFrame:
     )
 
     fit, _, _, _ = np.linalg.lstsq(session_time, gps_time)
-    logger.debug("Found a fit with m=%d, c=%d", fit[0][0], fit[1][0])
+    m = fit[0][0]
+    c = fit[1][0]
+    logger.debug("Found a fit with m=%d, c=%d", m, c)
+    if m < 990000 or m > 1010000:
+        logger.error(
+            "Computed GPS time to Session time slope m=%d out of range, interpolation will be incorrect",
+            m,
+        )
+    if c < 0:
+        logger.error(
+            "Computed intercept c=%d less than zero, check GPS date and time", c
+        )
 
     missing_gps_time_session_times = np.concat(
         (
@@ -147,14 +150,8 @@ def main() -> None:
             session_df.index[-1],
         )
         session_df = fill_missing_gps_time(session_df)
-        gps_time_df = session_df["GPS Date & Time"].dropna()
-        gps_time_start: pandas.Timestamp | None = None
-        gps_end_time: pandas.Timestamp | None = None
-        if gps_time_df.empty:
-            print(f"Split {i + 1:3d}: (No GPS Time data available)")
-        else:
-            gps_time_start = gps_time_df.iloc[0]
-            gps_end_time = gps_time_df.iloc[-1]
+        gps_time_start = session_df["GPS Date & Time"].iloc[0]
+        gps_time_end = session_df["GPS Date & Time"].iloc[-1]
         duration = (
             session_df["Session Time"].iloc[-1] - session_df["Session Time"].iloc[0]
         )
@@ -164,7 +161,7 @@ def main() -> None:
         minutes_str = f"{minutes:02d}m" if minutes > 0 else ""
         secs_str = f"{secs:.0f}s"
         print(
-            f"Split {i + 1:3d}: (Duration: {hours_str:>3s} {minutes_str:>3s} {secs_str:>3s}, GPS Time: {gps_time_start} to {gps_end_time})"
+            f"Split {i + 1:3d}: (Duration: {hours_str:>3s} {minutes_str:>3s} {secs_str:>3s}, GPS Time: {gps_time_start} to {gps_time_end})"
         )
 
 
