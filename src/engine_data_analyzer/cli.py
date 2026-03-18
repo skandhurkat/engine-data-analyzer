@@ -106,6 +106,48 @@ def fill_missing_gps_time(dataframe: pandas.DataFrame) -> pandas.DataFrame:
     return dataframe
 
 
+def is_engine_on(dataframe: pandas.DataFrame) -> bool:
+    rpm_cols = [c for c in dataframe.columns if c.lower().startswith("rpm")]
+    max_rpm = dataframe[rpm_cols].max(axis=1).max(axis=0)
+    return max_rpm > 5.0
+
+
+def get_low_oil_temp_high_rpm(
+    dataframe: pandas.DataFrame,
+) -> pandas.DataFrame:
+    rpm_cols = [c for c in dataframe.columns if c.lower().startswith("rpm")]
+    oil_temp_cols = [
+        c for c in dataframe.columns if c.lower().startswith("oil temperature")
+    ]
+    max_rpm = dataframe[rpm_cols].max(axis=1)
+    min_oil_temp = dataframe[oil_temp_cols].min(axis=1)
+
+    anomaly = (max_rpm > 1500) & (min_oil_temp < 40)
+    dataframe["Low Oil Temp & High RPM"] = anomaly
+
+    return dataframe
+
+
+def get_high_chts(dataframe: pandas.DataFrame) -> pandas.DataFrame:
+    cht_cols = [c for c in dataframe.columns if c.lower().startswith("cht")]
+    anomaly = dataframe[cht_cols].max(axis=1) > 200
+    dataframe["High CHTs"] = anomaly
+    return dataframe
+
+
+def get_low_rpm_high_airspeed(dataframe: pandas.DataFrame) -> pandas.DataFrame:
+    airspeed_cols = [
+        c for c in dataframe.columns if c.lower().startswith("indicated airspeed")
+    ]
+    assert len(airspeed_cols) == 1
+    rpm_cols = [c for c in dataframe.columns if c.lower().startswith("rpm")]
+    max_airspeed = dataframe[airspeed_cols].max(axis=1)
+    min_rpm = dataframe[rpm_cols].min(axis=1)
+    anomaly = (max_airspeed > 120) & (min_rpm < 2250)
+    dataframe["Low RPM & High Airspeed"] = anomaly
+    return dataframe
+
+
 def main() -> None:
     parser = ap.ArgumentParser()
     parser.add_argument("input_file", help="Input CSV file from engine monitor")
@@ -164,9 +206,26 @@ def main() -> None:
         hours_str = f"{hours:02d}h" if hours > 0 else ""
         minutes_str = f"{minutes:02d}m" if minutes > 0 else ""
         secs_str = f"{secs:.0f}s"
+        engine_on = is_engine_on(dataframe)
+        if not engine_on:
+            logger.debug("Engine not turned on this session, skipping")
+            continue
+
         print(
             f"Split {i + 1:3d}: (Duration: {hours_str:>3s} {minutes_str:>3s} {secs_str:>3s}, GPS Time: {gps_time_start} to {gps_time_end})"
         )
+
+        session_df = get_low_oil_temp_high_rpm(session_df)
+        if session_df["Low Oil Temp & High RPM"].any():
+            print("Low Oil Temp & High RPM detected")
+
+        session_df = get_high_chts(session_df)
+        if session_df["High CHTs"].any():
+            print("High CHTs detected")
+
+        session_df = get_low_rpm_high_airspeed(session_df)
+        if session_df["Low RPM & High Airspeed"].any():
+            print("Low RPM & High Airspeed detected")
 
 
 if __name__ == "__main__":
