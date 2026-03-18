@@ -1,10 +1,10 @@
 import argparse as ap
-import pandas
 import logging
-from rich.logging import RichHandler
-from rich.console import Console
-import numpy as np
 
+import numpy as np
+import pandas
+from rich.console import Console
+from rich.logging import RichHandler
 
 logger = logging.getLogger(__name__)
 
