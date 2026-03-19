@@ -5,6 +5,9 @@ import numpy as np
 import pandas
 from rich.console import Console
 from rich.logging import RichHandler
+import matplotlib.pyplot as plt
+from matplotlib.backends.backend_pdf import PdfPages
+import matplotlib.dates as mdate
 
 logger = logging.getLogger(__name__)
 
@@ -41,7 +44,31 @@ def split_sessions(dataframe: pandas.DataFrame) -> list[pandas.DataFrame]:
     return sessions
 
 
+def inject_nan_in_gaps(dataframe: pandas.DataFrame) -> pandas.DataFrame:
+    split_positions = (
+        dataframe["Session Time"].shift(-1) - dataframe["Session Time"] > 5
+    )
+
+    nan_df = pandas.DataFrame.from_dict({col: [np.nan] for col in dataframe.columns})
+
+    fragments: list[pandas.DataFrame] = []
+    for fragment in _split_dataframe_at_series(dataframe, split_positions):
+        if len(fragments) != 0:
+            filler_sess_time = (
+                fragments[-1]["Session Time"].iloc[-1]
+                + fragment["Session Time"].iloc[0]
+            ) / 2
+            nan_df.loc[0, "Session Time"] = filler_sess_time
+            fragments.append(nan_df.copy())
+        fragments.append(fragment)
+
+    return pandas.concat(fragments)
+
+
 def fill_missing_gps_time(dataframe: pandas.DataFrame) -> pandas.DataFrame:
+    dataframe["GPS Date & Time"] = pandas.to_datetime(
+        dataframe["GPS Date & Time"], errors="coerce"
+    )
     logger.info("Reconstructing missing GPS Date & Time values")
     # Fill missing GPS Date & Time values by interpolating based on Session Time
     if "GPS Date & Time" not in dataframe.columns:
@@ -155,6 +182,7 @@ def get_low_rpm_high_airspeed(dataframe: pandas.DataFrame) -> pandas.DataFrame:
 def main() -> None:
     parser = ap.ArgumentParser()
     parser.add_argument("input_file", help="Input CSV file from engine monitor")
+    parser.add_argument("output_file", help="Output PDF file")
     parser.add_argument(
         "-v",
         "--verbose",
@@ -164,6 +192,7 @@ def main() -> None:
     )
     args = parser.parse_args()
     input_file = args.input_file
+    output_file = args.output_file
 
     log_level = logging.WARNING  # Default log level
     if args.verbose == 1:
@@ -190,46 +219,110 @@ def main() -> None:
     flight_sessions = split_sessions(dataframe)
     logger.debug("Found %d flight sessions", len(flight_sessions))
 
-    # Parse each session
-    for i, session_df in enumerate(flight_sessions):
-        logger.info("Parsing session %d", i)
-        logger.debug(
-            "Session %d starts at index %d and ends at index %d",
-            i,
-            session_df.index[0],
-            session_df.index[-1],
-        )
-        session_df = fill_missing_gps_time(session_df)
-        gps_time_start = session_df["GPS Date & Time"].iloc[0]
-        gps_time_end = session_df["GPS Date & Time"].iloc[-1]
-        duration = (
-            session_df["Session Time"].iloc[-1] - session_df["Session Time"].iloc[0]
-        )
-        assert duration >= 0, "Duration should be non-negative"
-        hours, minutes, secs = time_as_tuple(duration)
-        hours_str = f"{hours:02d}h" if hours > 0 else ""
-        minutes_str = f"{minutes:02d}m" if minutes > 0 else ""
-        secs_str = f"{secs:.0f}s"
-        engine_on = is_engine_on(session_df)
-        if not engine_on:
-            logger.debug("Engine not turned on this session, skipping")
-            continue
+    rpm_cols = [c for c in dataframe.columns if c.lower().startswith("rpm")]
+    oil_temp_cols = [
+        c for c in dataframe.columns if c.lower().startswith("oil temperature")
+    ]
+    cht_cols = [c for c in dataframe.columns if c.lower().startswith("cht")]
+    airspeed_cols = [
+        c for c in dataframe.columns if c.lower().startswith("indicated airspeed")
+    ]
 
-        print(
-            f"Split {i + 1:3d}: (Duration: {hours_str:>3s} {minutes_str:>3s} {secs_str:>3s}, GPS Time: {gps_time_start} to {gps_time_end})"
-        )
+    with PdfPages(output_file) as pdf:
+        # Parse each session
+        for i, session_df in enumerate(flight_sessions):
+            logger.info("Parsing session %d", i)
+            logger.debug(
+                "Session %d starts at index %d and ends at index %d",
+                i,
+                session_df.index[0],
+                session_df.index[-1],
+            )
 
-        session_df = get_low_oil_temp_high_rpm(session_df)
-        if session_df["Low Oil Temp & High RPM"].any():
-            print("Low Oil Temp & High RPM detected")
+            session_df = inject_nan_in_gaps(session_df)
+            session_df = fill_missing_gps_time(session_df)
 
-        session_df = get_high_chts(session_df)
-        if session_df["High CHTs"].any():
-            print("High CHTs detected")
+            gps_time_start = session_df["GPS Date & Time"].iloc[0]
+            gps_time_end = session_df["GPS Date & Time"].iloc[-1]
 
-        session_df = get_low_rpm_high_airspeed(session_df)
-        if session_df["Low RPM & High Airspeed"].any():
-            print("Low RPM & High Airspeed detected")
+            session_time_start = session_df["Session Time"].iloc[0]
+            session_time_end = session_df["Session Time"].iloc[-1]
+            duration = session_time_end - session_time_start
+            if duration < 0:
+                logger.error(
+                    "Duration for session from %d to %d was negative, got %d. Session time at start is %d, at end is %d",
+                    session_df.index[0],
+                    session_df.index[-1],
+                    duration,
+                    session_time_start,
+                    session_time_end,
+                )
+
+            assert duration >= 0, "Duration should be non-negative"
+            hours, minutes, secs = time_as_tuple(duration)
+            hours_str = f"{hours:02d}h" if hours > 0 else ""
+            minutes_str = f"{minutes:02d}m" if minutes > 0 else ""
+            secs_str = f"{secs:.0f}s"
+            engine_on = is_engine_on(session_df)
+            if not engine_on:
+                logger.debug("Engine not turned on this session, skipping")
+                continue
+
+            print(
+                f"Split {i + 1:3d}: (Duration: {hours_str:>3s} {minutes_str:>3s} {secs_str:>3s}, GPS Time: {gps_time_start} to {gps_time_end})"
+            )
+
+            session_df = get_low_oil_temp_high_rpm(session_df)
+            if session_df["Low Oil Temp & High RPM"].any():
+                print("Low Oil Temp & High RPM detected")
+
+            session_df = get_high_chts(session_df)
+            if session_df["High CHTs"].any():
+                print("High CHTs detected")
+
+            session_df = get_low_rpm_high_airspeed(session_df)
+            if session_df["Low RPM & High Airspeed"].any():
+                print("Low RPM & High Airspeed detected")
+
+            # Plot the following in two plots
+            # Plot 1: RPM and airspeed
+            # Plot 2: CHTs and oil temperature
+            fig, ax = plt.subplots(4, figsize=(8, 10.5))
+
+            ax[0].plot(
+                session_df["GPS Date & Time"],
+                session_df[airspeed_cols],
+                label=airspeed_cols,
+            )
+            ax[1].plot(
+                session_df["GPS Date & Time"], session_df[rpm_cols], label=rpm_cols
+            )
+            ax[2].plot(
+                session_df["GPS Date & Time"], session_df[cht_cols], label=cht_cols
+            )
+            ax[3].plot(
+                session_df["GPS Date & Time"],
+                session_df[oil_temp_cols],
+                label=oil_temp_cols,
+            )
+
+            for i, a in enumerate(ax):
+                a.legend()
+                if i == 3:
+                    # a.tick_params("x", rotation=45)
+                    a.xaxis.set_major_formatter(
+                        mdate.ConciseDateFormatter(a.xaxis.get_major_locator())
+                    )
+                else:
+                    a.tick_params(
+                        "x", which="both", bottom="off", top="off", labelbottom="off"
+                    )
+
+            fig.autofmt_xdate()
+
+            pdf.savefig(bbox_inches="tight")
+
+            plt.close(fig)
 
 
 if __name__ == "__main__":
