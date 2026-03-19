@@ -16,22 +16,26 @@ def time_as_tuple(seconds: float) -> tuple[int, int, float]:
     return hours, minutes, secs
 
 
+def _split_dataframe_at_series(dataframe: pandas.DataFrame, series: pandas.Series):
+    previous_index = dataframe.index[0]
+
+    for split_point in dataframe[series].index:
+        yield dataframe.loc[previous_index:split_point]
+        previous_index = split_point + 1
+
+    try:
+        yield dataframe.loc[previous_index:]
+    except UnboundLocalError:
+        pass
+
+
 def split_sessions(dataframe: pandas.DataFrame) -> list[pandas.DataFrame]:
     logger.info("Splitting sessions based on 'Session Time' column")
-    # Identify session splits based on when the session time drops back to close to zero
-    split_points_range = dataframe["Session Time"].shift(-1) < dataframe["Session Time"]
-    split_points = [
-        int(idx) for idx in split_points_range[split_points_range == True].index
-    ]
-    last_dataframe_idx = int(dataframe.index[-1])
-    split_points[-1] = last_dataframe_idx
 
-    sessions = []
-    for i in range(len(split_points)):
-        start = (split_points[i - 1] + 1) if i > 0 else 0
-        end = split_points[i]
-        session_df = dataframe.loc[start:end].copy()
-        sessions.append(session_df)
+    # Identify session splits based on when the session time drops back to close to zero
+    split_points = dataframe["Session Time"].shift(-1) < dataframe["Session Time"]
+
+    sessions = [df for df in _split_dataframe_at_series(dataframe, split_points)]
 
     logger.info("Total sessions identified: %d", len(sessions))
     return sessions
