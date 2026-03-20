@@ -210,6 +210,10 @@ def median_blur(dataframe: pandas.DataFrame, col_name: str) -> pandas.DataFrame:
     return dataframe
 
 
+def c_to_f(celsius: float) -> float:
+    return celsius * 9 / 5 + 32
+
+
 def main() -> None:
     parser = ap.ArgumentParser()
     parser.add_argument("input_file", help="Input CSV file from engine monitor")
@@ -258,6 +262,9 @@ def main() -> None:
     airspeed_cols = [
         c for c in dataframe.columns if c.lower().startswith("indicated airspeed")
     ]
+
+    oil_temp_f_cols = [c.replace("deg C", "deg F") for c in oil_temp_cols]
+    cht_f_cols = [c.replace("deg C", "deg F") for c in cht_cols]
 
     with PdfPages(output_file) as pdf:
         # Parse each session
@@ -329,6 +336,12 @@ def main() -> None:
                     session_df, "Low RPM & High Airspeed"
                 )
 
+            for cf, cc in zip(cht_f_cols, cht_cols):
+                session_df[cf] = c_to_f(session_df[cc])
+
+            for cf, cc in zip(oil_temp_f_cols, oil_temp_cols):
+                session_df[cf] = c_to_f(session_df[cc])
+
             # Plot the following in four plots
             # Plot 1: Airspeed: Highlight high airspeed and low RPM
             # Plot 2: RPM: Highlight high airspeed and low RPM & high RPM and low Oil Temp
@@ -345,12 +358,12 @@ def main() -> None:
                 session_df["GPS Date & Time"], session_df[rpm_cols], label=rpm_cols
             )
             ax[2].plot(
-                session_df["GPS Date & Time"], session_df[cht_cols], label=cht_cols
+                session_df["GPS Date & Time"], session_df[cht_f_cols], label=cht_f_cols
             )
             ax[3].plot(
                 session_df["GPS Date & Time"],
-                session_df[oil_temp_cols],
-                label=oil_temp_cols,
+                session_df[oil_temp_f_cols],
+                label=oil_temp_f_cols,
             )
 
             for s, e in low_rpm_high_airspeed_intervals:
@@ -367,15 +380,17 @@ def main() -> None:
 
             for i, a in enumerate(ax):
                 a.legend()
+                a.grid()
                 if i == 3:
                     # a.tick_params("x", rotation=45)
                     a.xaxis.set_major_formatter(
                         mdate.ConciseDateFormatter(a.xaxis.get_major_locator())
                     )
                 else:
-                    a.tick_params(
-                        "x", which="both", bottom="off", top="off", labelbottom="off"
-                    )
+                    a.set(xticklabels=[])
+                    # a.tick_params(
+                    #     "x", which="both", bottom="off", top="off", labelbottom="off"
+                    # )
 
             fig.autofmt_xdate()
 
