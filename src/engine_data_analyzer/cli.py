@@ -179,6 +179,37 @@ def get_low_rpm_high_airspeed(dataframe: pandas.DataFrame) -> pandas.DataFrame:
     return dataframe
 
 
+def get_start_end_time(
+    dataframe: pandas.DataFrame, time_col: str
+) -> list[tuple[pandas.Timestamp, pandas.Timestamp]]:
+    start_end_times: list[tuple[pandas.Timestamp, pandas.Timestamp]] = []
+    in_session = False
+    session_start_time = None
+
+    for _, row in dataframe.iterrows():
+        if not in_session and row[time_col] > 0:
+            in_session = True
+            session_start_time = row["GPS Date & Time"]
+        elif in_session and row[time_col] == 0:
+            in_session = False
+            if session_start_time is not None:
+                start_end_times.append((session_start_time, row["GPS Date & Time"]))
+
+    return start_end_times
+
+
+def median_blur(dataframe: pandas.DataFrame, col_name: str) -> pandas.DataFrame:
+    assert dataframe[col_name].dtype == bool
+    dataframe[col_name] = (
+        dataframe[col_name].shift(-2)
+        + dataframe[col_name].shift(-1)
+        + dataframe[col_name]
+        + dataframe[col_name].shift(1)
+        + dataframe[col_name].shift(2)
+    ) >= 3
+    return dataframe
+
+
 def main() -> None:
     parser = ap.ArgumentParser()
     parser.add_argument("input_file", help="Input CSV file from engine monitor")
@@ -272,21 +303,37 @@ def main() -> None:
                 f"Split {i + 1:3d}: (Duration: {hours_str:>3s} {minutes_str:>3s} {secs_str:>3s}, GPS Time: {gps_time_start} to {gps_time_end})"
             )
 
+            low_oil_temp_high_rpm_intervals = []
+            high_cht_intervals = []
+            low_rpm_high_airspeed_intervals = []
+
             session_df = get_low_oil_temp_high_rpm(session_df)
+            session_df = median_blur(session_df, "Low Oil Temp & High RPM")
             if session_df["Low Oil Temp & High RPM"].any():
                 print("Low Oil Temp & High RPM detected")
+                low_oil_temp_high_rpm_intervals = get_start_end_time(
+                    session_df, "Low Oil Temp & High RPM"
+                )
 
             session_df = get_high_chts(session_df)
+            session_df = median_blur(session_df, "High CHTs")
             if session_df["High CHTs"].any():
                 print("High CHTs detected")
+                high_cht_intervals = get_start_end_time(session_df, "High CHTs")
 
             session_df = get_low_rpm_high_airspeed(session_df)
+            session_df = median_blur(session_df, "Low RPM & High Airspeed")
             if session_df["Low RPM & High Airspeed"].any():
                 print("Low RPM & High Airspeed detected")
+                low_rpm_high_airspeed_intervals = get_start_end_time(
+                    session_df, "Low RPM & High Airspeed"
+                )
 
-            # Plot the following in two plots
-            # Plot 1: RPM and airspeed
-            # Plot 2: CHTs and oil temperature
+            # Plot the following in four plots
+            # Plot 1: Airspeed: Highlight high airspeed and low RPM
+            # Plot 2: RPM: Highlight high airspeed and low RPM & high RPM and low Oil Temp
+            # Plot 3: CHTs: Highlight high CHTs
+            # Plot 4: Oil Temp: Highlight high RPM and low Oil Temp
             fig, ax = plt.subplots(4, figsize=(8, 10.5))
 
             ax[0].plot(
@@ -305,6 +352,18 @@ def main() -> None:
                 session_df[oil_temp_cols],
                 label=oil_temp_cols,
             )
+
+            for s, e in low_rpm_high_airspeed_intervals:
+                print(f"Low RPM High Airspeed: {s}, {e}")
+                ax[0].axvspan(s, e, color="xkcd:light pink")
+                ax[1].axvspan(s, e, color="xkcd:light pink")
+
+            for s, e in low_oil_temp_high_rpm_intervals:
+                ax[1].axvspan(s, e, color="xkcd:pale blue")
+                ax[3].axvspan(s, e, color="xkcd:pale blue")
+
+            for s, e in high_cht_intervals:
+                ax[2].axvspan(s, e, color="xkcd:light aqua")
 
             for i, a in enumerate(ax):
                 a.legend()
