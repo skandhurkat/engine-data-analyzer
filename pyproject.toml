@@ -24,7 +24,11 @@ eda = "engine_data_analyzer.cli:main()"
 [project.optional-dependencies]
 dev = [
     "black",
-    "mypy",
-    "isort",
     "flake8",
+    "isort",
+    "mypy",
+    "pytest",
 ]
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/engine_data_analyzer"]
