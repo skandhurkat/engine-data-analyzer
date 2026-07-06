@@ -22,11 +22,14 @@ def read_file(file_path: str | pathlib.Path) -> pd.DataFrame:
 
 
 _cht_cols_regex = re.compile(r"^(?:CHT|cht)\s+(\d+)(\s+\(deg (C|F)\))?$")
+_egt_cols_regex = re.compile(r"^(?:EGT|egt)\s+(\d+)(\s+\(deg (C|F)\))?$")
 
 
-def _get_cht_col_unit(col: str) -> units.TemperatureUnit:
-    """Extract the temperature unit used for logging CHT columns."""
-    m = _cht_cols_regex.match(col)
+def __get_cyl_col_unit(col: str, regex: re.Pattern) -> units.TemperatureUnit:
+    """Use the supplied regex to extract the units used for recording
+    the given cylinder temperature. The supplied regex must capture the
+    temperature as "deg C" or "deg F" in the second capture group."""
+    m = regex.match(col)
     if m is None:
         raise ValueError(f"Cannot parse supplied column {col}")
     match_groups = m.groups()
@@ -41,9 +44,11 @@ def _get_cht_col_unit(col: str) -> units.TemperatureUnit:
         return units.TemperatureUnit.UNKNOWN
 
 
-def _get_cht_col_cyl_num(col: str) -> int | None:
-    """Extract the cylinder number from the CHT column"""
-    m = _cht_cols_regex.match(col)
+def __get_cyl_col_num(col: str, regex: re.Pattern) -> int | None:
+    """Use the supplied regex to extract the cylinder number. The
+    supplied regex must capture the cylinder number as the first
+    capture group."""
+    m = regex.match(col)
     if m is None:
         raise ValueError(f"Cannot parse supplied column {col}")
     match_groups = m.groups()
@@ -57,3 +62,23 @@ def _get_cht_col_cyl_num(col: str) -> int | None:
     except:
         logger.error(f"Error extracting cylinder number from {col}")
         return None
+
+
+def _get_cht_col_unit(col: str) -> units.TemperatureUnit:
+    """Extract the temperature unit used for logging CHT columns."""
+    return __get_cyl_col_unit(col, _cht_cols_regex)
+
+
+def _get_cht_col_cyl_num(col: str) -> int | None:
+    """Extract the cylinder number from the CHT column."""
+    return __get_cyl_col_num(col, _cht_cols_regex)
+
+
+def _get_egt_col_unit(col: str) -> units.TemperatureUnit:
+    """Extract the temperature unit used for logging EGT columns."""
+    return __get_cyl_col_unit(col, _egt_cols_regex)
+
+
+def _get_egt_col_cyl_num(col: str) -> int | None:
+    """Extract the cylinder number from the EGT column."""
+    return __get_cyl_col_num(col, _egt_cols_regex)
