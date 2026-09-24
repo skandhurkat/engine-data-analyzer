@@ -5,3 +5,6 @@ edition = "2024"
 
 [dependencies]
 argparse = "0.2.2"
+
+[dev-dependencies]
+parameterized = "2.1.0"
