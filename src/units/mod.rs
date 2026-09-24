@@ -1,3 +1,7 @@
+pub trait Unit {
+    fn format_unit(&self) -> &'static str;
+}
+
 mod pressure;
 mod temperature;
 

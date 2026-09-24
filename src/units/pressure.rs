@@ -1,3 +1,5 @@
+use super::Unit;
+
 pub enum Pressure {
     PSI,
     Pascal,
@@ -39,7 +41,9 @@ impl Pressure {
             _ => self.to_pascal(pressure) / 1e5,
         }
     }
+}
 
+impl Unit for Pressure {
     fn format_unit(&self) -> &'static str {
         match self {
             Pressure::PSI => "psi",
