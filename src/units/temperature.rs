@@ -1,20 +1,20 @@
 pub enum Temperature {
-    Celsius(f32),
-    Farenheit(f32),
+    Celsius,
+    Farenheit,
 }
 
 impl Temperature {
-    fn to_celsius(&self) -> f32 {
+    fn to_celsius(&self, val: f32) -> f32 {
         match self {
-            Temperature::Celsius(c) => *c,
-            Temperature::Farenheit(f) => (f - 32.) * 5. / 9.,
+            Temperature::Celsius => val,
+            Temperature::Farenheit => (val - 32.) * 5. / 9.,
         }
     }
 
-    fn to_farenheit(&self) -> f32 {
+    fn to_farenheit(&self, val: f32) -> f32 {
         match self {
-            Temperature::Celsius(c) => c * 9. / 5. + 32.,
-            Temperature::Farenheit(f) => *f,
+            Temperature::Celsius => val * 9. / 5. + 32.,
+            Temperature::Farenheit => val,
         }
     }
 }
@@ -27,9 +27,9 @@ mod tests {
 
     #[parameterized(c = {0.0, 100.0, -40.0}, f = {32.0, 212.0, -40.0})]
     fn c_conversion_test(c: f32, f: f32) {
-        let t = Temperature::Celsius(c);
-        let t_c = t.to_celsius();
-        let t_f = t.to_farenheit();
+        let t = Temperature::Celsius;
+        let t_c = t.to_celsius(c);
+        let t_f = t.to_farenheit(c);
 
         assert_approx_eq!(
             f32,
@@ -53,9 +53,9 @@ mod tests {
 
     #[parameterized(c = {0.0, 100.0, -40.0}, f = {32.0, 212.0, -40.0})]
     fn f_conversion_test(c: f32, f: f32) {
-        let t = Temperature::Farenheit(f);
-        let t_c = t.to_celsius();
-        let t_f = t.to_farenheit();
+        let t = Temperature::Farenheit;
+        let t_c = t.to_celsius(f);
+        let t_f = t.to_farenheit(f);
 
         assert_approx_eq!(
             f32,
