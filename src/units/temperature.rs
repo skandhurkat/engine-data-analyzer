@@ -22,29 +22,58 @@ impl Temperature {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use float_cmp::{F32Margin, assert_approx_eq};
     use parameterized::parameterized;
 
-    #[parameterized(c = {0.0, 100.0, -40.0})]
-    fn c_to_c_test(c: f32) {
+    #[parameterized(c = {0.0, 100.0, -40.0}, f = {32.0, 212.0, -40.0})]
+    fn c_conversion_test(c: f32, f: f32) {
         let t = Temperature::Celsius(c);
-        assert_eq!(t.to_celsius(), c);
+        let t_c = t.to_celsius();
+        let t_f = t.to_farenheit();
+
+        assert_approx_eq!(
+            f32,
+            t_c,
+            c,
+            F32Margin {
+                epsilon: 0.0001,
+                ulps: 4
+            }
+        );
+        assert_approx_eq!(
+            f32,
+            t_f,
+            f,
+            F32Margin {
+                epsilon: 0.0001,
+                ulps: 4
+            }
+        );
     }
 
     #[parameterized(c = {0.0, 100.0, -40.0}, f = {32.0, 212.0, -40.0})]
-    fn c_to_f_test(c: f32, f: f32) {
-        let t = Temperature::Celsius(c);
-        assert_eq!(t.to_farenheit(), f);
-    }
-
-    #[parameterized(f = {32.0, 212.0, -40.0}, c = {0.0, 100.0, -40.0})]
-    fn f_to_c_test(f: f32, c: f32) {
+    fn f_conversion_test(c: f32, f: f32) {
         let t = Temperature::Farenheit(f);
-        assert_eq!(t.to_celsius(), c);
-    }
+        let t_c = t.to_celsius();
+        let t_f = t.to_farenheit();
 
-    #[parameterized(f = {32.0, 212.0, -40.0})]
-    fn f_to_f_test(f: f32) {
-        let t = Temperature::Farenheit(f);
-        assert_eq!(t.to_farenheit(), f);
+        assert_approx_eq!(
+            f32,
+            t_c,
+            c,
+            F32Margin {
+                epsilon: 0.0001,
+                ulps: 4
+            }
+        );
+        assert_approx_eq!(
+            f32,
+            t_f,
+            f,
+            F32Margin {
+                epsilon: 0.0001,
+                ulps: 4
+            }
+        );
     }
 }
