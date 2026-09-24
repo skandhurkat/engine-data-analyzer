@@ -8,3 +8,4 @@ argparse = "0.2.2"
 
 [dev-dependencies]
 parameterized = "2.1.0"
+float-cmp = "0.10.0"
