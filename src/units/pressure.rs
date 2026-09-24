@@ -1,42 +1,42 @@
 pub enum Pressure {
-    PSI(f32),
-    Pascal(f32),
-    KPa(f32),
-    Bar(f32),
+    PSI,
+    Pascal,
+    KPa,
+    Bar,
 }
 
 impl Pressure {
-    fn to_psi(&self) -> f32 {
+    fn to_psi(&self, pressure: f32) -> f32 {
         match self {
-            Pressure::PSI(p) => *p,
-            Pressure::Pascal(p) => p / 6894.75729,
-            Pressure::KPa(p) => p / 6.89475729,
-            Pressure::Bar(p) => p / 0.0689475729,
+            Pressure::PSI => pressure,
+            Pressure::Pascal => pressure / 6894.75729,
+            Pressure::KPa => pressure / 6.89475729,
+            Pressure::Bar => pressure / 0.0689475729,
         }
     }
 
-    fn to_pascal(&self) -> f32 {
+    fn to_pascal(&self, pressure: f32) -> f32 {
         match self {
-            Pressure::PSI(p) => p * 6894.75729,
-            Pressure::Pascal(p) => *p,
-            Pressure::KPa(p) => p * 1e3,
-            Pressure::Bar(p) => p * 1e5,
+            Pressure::PSI => pressure * 6894.75729,
+            Pressure::Pascal => pressure,
+            Pressure::KPa => pressure * 1e3,
+            Pressure::Bar => pressure * 1e5,
         }
     }
 
-    fn to_kpa(&self) -> f32 {
+    fn to_kpa(&self, pressure: f32) -> f32 {
         match self {
-            Pressure::KPa(p) => *p,
-            Pressure::Bar(p) => p * 100.,
-            _ => self.to_pascal() / 1e3,
+            Pressure::KPa => pressure,
+            Pressure::Bar => pressure * 100.,
+            _ => self.to_pascal(pressure) / 1e3,
         }
     }
 
-    fn to_bar(&self) -> f32 {
+    fn to_bar(&self, pressure: f32) -> f32 {
         match self {
-            Pressure::KPa(p) => p / 100.,
-            Pressure::Bar(p) => *p,
-            _ => self.to_pascal() / 1e5,
+            Pressure::KPa => pressure / 100.,
+            Pressure::Bar => pressure,
+            _ => self.to_pascal(pressure) / 1e5,
         }
     }
 }
@@ -54,11 +54,11 @@ mod tests {
         bar = {11.6046, 53.7371, 60.1986, 49.1527, 19.6732},
     )]
     fn psi_conversion_test(psi: f32, pascal: f32, kpa: f32, bar: f32) {
-        let p = Pressure::PSI(psi);
-        let p_psi = p.to_psi();
-        let p_pascal = p.to_pascal();
-        let p_kpa = p.to_kpa();
-        let p_bar = p.to_bar();
+        let p = Pressure::PSI;
+        let p_psi = p.to_psi(psi);
+        let p_pascal = p.to_pascal(psi);
+        let p_kpa = p.to_kpa(psi);
+        let p_bar = p.to_bar(psi);
         assert_approx_eq!(
             f32,
             p_psi,
@@ -104,11 +104,11 @@ mod tests {
         bar = {11.6046, 53.7371, 60.1986, 49.1527, 19.6732},
     )]
     fn pascal_conversion_test(psi: f32, pascal: f32, kpa: f32, bar: f32) {
-        let p = Pressure::Pascal(pascal);
-        let p_psi = p.to_psi();
-        let p_pascal = p.to_pascal();
-        let p_kpa = p.to_kpa();
-        let p_bar = p.to_bar();
+        let p = Pressure::Pascal;
+        let p_psi = p.to_psi(pascal);
+        let p_pascal = p.to_pascal(pascal);
+        let p_kpa = p.to_kpa(pascal);
+        let p_bar = p.to_bar(pascal);
         assert_approx_eq!(
             f32,
             p_psi,
@@ -154,11 +154,11 @@ mod tests {
         bar = {11.6046, 53.7371, 60.1986, 49.1527, 19.6732},
     )]
     fn kpa_conversion_test(psi: f32, pascal: f32, kpa: f32, bar: f32) {
-        let p = Pressure::KPa(kpa);
-        let p_psi = p.to_psi();
-        let p_pascal = p.to_pascal();
-        let p_kpa = p.to_kpa();
-        let p_bar = p.to_bar();
+        let p = Pressure::KPa;
+        let p_psi = p.to_psi(kpa);
+        let p_pascal = p.to_pascal(kpa);
+        let p_kpa = p.to_kpa(kpa);
+        let p_bar = p.to_bar(kpa);
         assert_approx_eq!(
             f32,
             p_psi,
@@ -204,11 +204,11 @@ mod tests {
         bar = {11.6046, 53.7371, 60.1986, 49.1527, 19.6732},
     )]
     fn bar_conversion_test(psi: f32, pascal: f32, kpa: f32, bar: f32) {
-        let p = Pressure::Bar(bar);
-        let p_psi = p.to_psi();
-        let p_pascal = p.to_pascal();
-        let p_kpa = p.to_kpa();
-        let p_bar = p.to_bar();
+        let p = Pressure::Bar;
+        let p_psi = p.to_psi(bar);
+        let p_pascal = p.to_pascal(bar);
+        let p_kpa = p.to_kpa(bar);
+        let p_bar = p.to_bar(bar);
         assert_approx_eq!(
             f32,
             p_psi,
