@@ -39,6 +39,15 @@ impl Pressure {
             _ => self.to_pascal(pressure) / 1e5,
         }
     }
+
+    fn format_unit(&self) -> &'static str {
+        match self {
+            Pressure::PSI => "psi",
+            Pressure::Pascal => "Pa",
+            Pressure::KPa => "kPa",
+            Pressure::Bar => "bar",
+        }
+    }
 }
 
 #[cfg(test)]

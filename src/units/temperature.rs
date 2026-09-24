@@ -4,17 +4,24 @@ pub enum Temperature {
 }
 
 impl Temperature {
-    fn to_celsius(&self, val: f32) -> f32 {
+    fn to_celsius(&self, temp: f32) -> f32 {
         match self {
-            Temperature::Celsius => val,
-            Temperature::Farenheit => (val - 32.) * 5. / 9.,
+            Temperature::Celsius => temp,
+            Temperature::Farenheit => (temp - 32.) * 5. / 9.,
         }
     }
 
-    fn to_farenheit(&self, val: f32) -> f32 {
+    fn to_farenheit(&self, temp: f32) -> f32 {
         match self {
-            Temperature::Celsius => val * 9. / 5. + 32.,
-            Temperature::Farenheit => val,
+            Temperature::Celsius => temp * 9. / 5. + 32.,
+            Temperature::Farenheit => temp,
+        }
+    }
+
+    fn format_unit(&self) -> &'static str {
+        match self {
+            Temperature::Celsius => "℃",
+            Temperature::Farenheit => "℉",
         }
     }
 }
