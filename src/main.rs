@@ -1,50 +1,43 @@
+use clap::{ArgAction, Parser};
+use spdlog::prelude::*;
 use std::fs::File;
 use std::io::{self, BufRead};
 use std::path::Path;
 
+pub mod parsers;
 pub mod units;
 
-extern crate argparse;
+use parsers::dynon::*;
 
-use argparse as ap;
-
-fn read_lines<P>(filename: P) -> io::Result<io::Lines<io::BufReader<File>>>
-where
-    P: AsRef<Path>,
-{
-    let file = File::open(filename)?;
-    Ok(io::BufReader::new(file).lines())
-}
-
+#[derive(Parser, Debug)]
+#[command(version, about, long_about = None)]
 struct Arguments {
+    #[arg()]
     input_file_path: String,
-}
-
-fn parse_args() -> Arguments {
-    let mut file_path: String = "".to_string();
-    {
-        let mut ap = ap::ArgumentParser::new();
-        ap.set_description("Parse and read an engine data monitor file");
-        ap.refer(&mut file_path).required().add_argument(
-            "file_name",
-            ap::Store,
-            r#"File to parse"#,
-        );
-        ap.parse_args_or_exit();
-    }
-    Arguments {
-        input_file_path: file_path,
-    }
+    #[arg(short, long, default_value_t = 0, action = ArgAction::Count)]
+    verbosity: u8,
 }
 
 fn main() {
-    let args: Arguments = parse_args();
+    let args: Arguments = Arguments::parse();
     let file_path = &args.input_file_path;
+    let log_level = if args.verbosity >= 5 {
+        spdlog::Level::Trace
+    } else if args.verbosity == 4 {
+        spdlog::Level::Debug
+    } else if args.verbosity == 3 {
+        spdlog::Level::Info
+    } else if args.verbosity == 2 {
+        spdlog::Level::Warn
+    } else if args.verbosity == 1 {
+        spdlog::Level::Error
+    } else {
+        spdlog::Level::Critical
+    };
+
+    spdlog::default_logger().set_level_filter(spdlog::LevelFilter::MoreSevereEqual(log_level));
+
     println!("Reading {file_path}");
 
-    if let Ok(lines) = read_lines(file_path) {
-        for line in lines.map_while(Result::ok) {
-            println!("{line}");
-        }
-    }
+    let _ = try_parse_dynon(file_path);
 }
