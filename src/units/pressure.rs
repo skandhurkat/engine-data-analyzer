@@ -54,6 +54,16 @@ impl Pressure {
             Pressure::InHg => pressure,
         }
     }
+
+    pub fn to(&self, to_unit: Pressure, pressure: f32) -> f32 {
+        match to_unit {
+            Pressure::PSI => self.to_psi(pressure),
+            Pressure::Pascal => self.to_pascal(pressure),
+            Pressure::KPa => self.to_kpa(pressure),
+            Pressure::Bar => self.to_bar(pressure),
+            Pressure::InHg => self.to_in_hg(pressure),
+        }
+    }
 }
 
 impl UnitPrinter for Pressure {
@@ -83,11 +93,11 @@ mod tests {
     )]
     fn psi_conversion_test(psi: f32, pascal: f32, kpa: f32, bar: f32, in_hg: f32) {
         let p = Pressure::PSI;
-        let p_psi = p.to_psi(psi);
-        let p_pascal = p.to_pascal(psi);
-        let p_kpa = p.to_kpa(psi);
-        let p_bar = p.to_bar(psi);
-        let p_in_hg = p.to_in_hg(psi);
+        let p_psi = p.to(Pressure::PSI, psi);
+        let p_pascal = p.to(Pressure::Pascal, psi);
+        let p_kpa = p.to(Pressure::KPa, psi);
+        let p_bar = p.to(Pressure::Bar, psi);
+        let p_in_hg = p.to(Pressure::InHg, psi);
         assert_approx_eq!(
             f32,
             p_psi,
@@ -144,11 +154,11 @@ mod tests {
     )]
     fn pascal_conversion_test(psi: f32, pascal: f32, kpa: f32, bar: f32, in_hg: f32) {
         let p = Pressure::Pascal;
-        let p_psi = p.to_psi(pascal);
-        let p_pascal = p.to_pascal(pascal);
-        let p_kpa = p.to_kpa(pascal);
-        let p_bar = p.to_bar(pascal);
-        let p_in_hg = p.to_in_hg(pascal);
+        let p_psi = p.to(Pressure::PSI, pascal);
+        let p_pascal = p.to(Pressure::Pascal, pascal);
+        let p_kpa = p.to(Pressure::KPa, pascal);
+        let p_bar = p.to(Pressure::Bar, pascal);
+        let p_in_hg = p.to(Pressure::InHg, pascal);
         assert_approx_eq!(
             f32,
             p_psi,
@@ -205,11 +215,11 @@ mod tests {
     )]
     fn kpa_conversion_test(psi: f32, pascal: f32, kpa: f32, bar: f32, in_hg: f32) {
         let p = Pressure::KPa;
-        let p_psi = p.to_psi(kpa);
-        let p_pascal = p.to_pascal(kpa);
-        let p_kpa = p.to_kpa(kpa);
-        let p_bar = p.to_bar(kpa);
-        let p_in_hg = p.to_in_hg(kpa);
+        let p_psi = p.to(Pressure::PSI, kpa);
+        let p_pascal = p.to(Pressure::Pascal, kpa);
+        let p_kpa = p.to(Pressure::KPa, kpa);
+        let p_bar = p.to(Pressure::Bar, kpa);
+        let p_in_hg = p.to(Pressure::InHg, kpa);
         assert_approx_eq!(
             f32,
             p_psi,
@@ -267,11 +277,11 @@ mod tests {
     )]
     fn bar_conversion_test(psi: f32, pascal: f32, kpa: f32, bar: f32, in_hg: f32) {
         let p = Pressure::Bar;
-        let p_psi = p.to_psi(bar);
-        let p_pascal = p.to_pascal(bar);
-        let p_kpa = p.to_kpa(bar);
-        let p_bar = p.to_bar(bar);
-        let p_in_hg = p.to_in_hg(bar);
+        let p_psi = p.to(Pressure::PSI, bar);
+        let p_pascal = p.to(Pressure::Pascal, bar);
+        let p_kpa = p.to(Pressure::KPa, bar);
+        let p_bar = p.to(Pressure::Bar, bar);
+        let p_in_hg = p.to(Pressure::InHg, bar);
         assert_approx_eq!(
             f32,
             p_psi,

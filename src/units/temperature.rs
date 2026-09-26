@@ -19,6 +19,13 @@ impl Temperature {
             Temperature::Farenheit => temp,
         }
     }
+
+    pub fn to(&self, to_unit: Temperature, temp: f32) -> f32 {
+        match to_unit {
+            Temperature::Celsius => self.to_celsius(temp),
+            Temperature::Farenheit => self.to_farenheit(temp),
+        }
+    }
 }
 
 impl UnitPrinter for Temperature {
@@ -39,8 +46,8 @@ mod tests {
     #[parameterized(c = {0.0, 100.0, -40.0}, f = {32.0, 212.0, -40.0})]
     fn c_conversion_test(c: f32, f: f32) {
         let t = Temperature::Celsius;
-        let t_c = t.to_celsius(c);
-        let t_f = t.to_farenheit(c);
+        let t_c = t.to(Temperature::Celsius, c);
+        let t_f = t.to(Temperature::Farenheit, c);
 
         assert_approx_eq!(
             f32,
@@ -65,8 +72,8 @@ mod tests {
     #[parameterized(c = {0.0, 100.0, -40.0}, f = {32.0, 212.0, -40.0})]
     fn f_conversion_test(c: f32, f: f32) {
         let t = Temperature::Farenheit;
-        let t_c = t.to_celsius(f);
-        let t_f = t.to_farenheit(f);
+        let t_c = t.to(Temperature::Celsius, f);
+        let t_f = t.to(Temperature::Farenheit, f);
 
         assert_approx_eq!(
             f32,
