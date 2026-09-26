@@ -1,4 +1,4 @@
-use super::Unit;
+use super::UnitPrinter;
 
 pub enum Temperature {
     Celsius,
@@ -21,7 +21,7 @@ impl Temperature {
     }
 }
 
-impl Unit for Temperature {
+impl UnitPrinter for Temperature {
     fn format_unit(&self) -> &'static str {
         match self {
             Temperature::Celsius => "℃",

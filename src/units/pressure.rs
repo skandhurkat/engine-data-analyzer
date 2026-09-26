@@ -1,4 +1,4 @@
-use super::Unit;
+use super::UnitPrinter;
 
 pub enum Pressure {
     PSI,
@@ -56,7 +56,7 @@ impl Pressure {
     }
 }
 
-impl Unit for Pressure {
+impl UnitPrinter for Pressure {
     fn format_unit(&self) -> &'static str {
         match self {
             Pressure::PSI => "psi",
