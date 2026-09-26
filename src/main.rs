@@ -1,8 +1,4 @@
 use clap::{ArgAction, Parser};
-use spdlog::prelude::*;
-use std::fs::File;
-use std::io::{self, BufRead};
-use std::path::Path;
 
 pub mod parsers;
 pub mod units;

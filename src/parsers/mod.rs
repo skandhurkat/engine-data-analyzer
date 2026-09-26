@@ -1,3 +1,3 @@
 pub mod dynon;
 
-use dynon::*;
+pub use dynon::*;
