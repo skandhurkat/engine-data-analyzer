@@ -1,14 +1,14 @@
+mod angle;
 mod length;
 mod pressure;
 mod speed;
 mod temperature;
-mod angle;
 
+pub use angle::*;
 pub use length::*;
 pub use pressure::*;
 pub use speed::*;
 pub use temperature::*;
-pub use angle::*;
 
 pub enum Unit {
     Temperature(temperature::Temperature),
