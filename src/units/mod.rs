@@ -41,7 +41,9 @@ macro_rules! define_units {
             }
 
             pub fn convert(&self, to_unit: &Self, val: f32) -> f32 {
-                if *self == *to_unit {return val;}
+                if *self == *to_unit {
+                    return val;
+                }
                 to_unit.from_quantity(self.to_quantity(val))
             }
         }
@@ -142,7 +144,7 @@ macro_rules! measurement {
             $variant:ident($unit_type:ty)
         ),* $(,)?
     ) => {
-        enum Measurement {
+        pub enum Measurement {
             $(
                 $variant($unit_type),
             )*
@@ -181,4 +183,128 @@ measurement! {
     Velocity(VelocityUnit),
     Volume(VolumeUnit),
     VolumeRate(VolumeRateUnit),
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use float_cmp::{F32Margin, approx_eq};
+
+    #[test]
+    fn test_accelation_conversion() {
+        let m = Measurement::Acceleration(AccelerationUnit::StandardGravity);
+        let value: f32 = 0.6;
+        let converted = m.convert(
+            &Measurement::Acceleration(AccelerationUnit::StandardGravity),
+            value,
+        );
+        assert_ne!(converted, None);
+        assert_eq!(converted.unwrap(), value);
+
+        let converted_fail = m.convert(&Measurement::Angle(AngleUnit::Degree), value);
+        assert_eq!(converted_fail, None);
+    }
+
+    #[test]
+    fn test_angle_conversion() {
+        let m = Measurement::Angle(AngleUnit::Degree);
+        let value: f32 = 30.0;
+        let converted = m.convert(&Measurement::Angle(AngleUnit::Degree), value);
+        assert_ne!(converted, None);
+        assert_eq!(converted.unwrap(), value);
+
+        let converted_fail = m.convert(
+            &Measurement::AngularVelocity(AngularVelocityUnit::RevolutionPerMinute),
+            value,
+        );
+        assert_eq!(converted_fail, None);
+    }
+
+    #[test]
+    fn test_length_conversion() {
+        {
+            let m = Measurement::Length(LengthUnit::Kilometer);
+            let value_km: f32 = 1.5;
+            let value_sm: f32 = 0.9320568;
+            let value_nm: f32 = 0.8099352;
+
+            let converted_km = m.convert(&Measurement::Length(LengthUnit::Kilometer), value_km);
+            assert_ne!(converted_km, None);
+            assert!(approx_eq!(
+                f32,
+                converted_km.unwrap(),
+                value_km,
+                F32Margin {
+                    epsilon: 0.00001,
+                    ulps: 2
+                }
+            ));
+
+            let converted_sm = m.convert(&Measurement::Length(LengthUnit::StatuteMile), value_km);
+            assert_ne!(converted_sm, None);
+            assert!(approx_eq!(
+                f32,
+                converted_sm.unwrap(),
+                value_sm,
+                F32Margin {
+                    epsilon: 0.00001,
+                    ulps: 2
+                }
+            ));
+
+            let converted_nm = m.convert(&Measurement::Length(LengthUnit::NauticalMile), value_km);
+            assert_ne!(converted_nm, None);
+            assert!(approx_eq!(
+                f32,
+                converted_nm.unwrap(),
+                value_nm,
+                F32Margin {
+                    epsilon: 0.00001,
+                    ulps: 2
+                }
+            ));
+        }
+        {
+            let m = Measurement::Length(LengthUnit::StatuteMile);
+            let value_sm: f32 = 3.5;
+            let value_km: f32 = 5.632704;
+            let value_nm: f32 = 3.041417;
+
+            let converted_km = m.convert(&Measurement::Length(LengthUnit::Kilometer), value_sm);
+            assert_ne!(converted_km, None);
+            assert!(approx_eq!(
+                f32,
+                converted_km.unwrap(),
+                value_km,
+                F32Margin {
+                    epsilon: 0.00001,
+                    ulps: 2
+                }
+            ));
+
+            let converted_sm = m.convert(&Measurement::Length(LengthUnit::StatuteMile), value_sm);
+            assert_ne!(converted_sm, None);
+            assert!(approx_eq!(
+                f32,
+                converted_sm.unwrap(),
+                value_sm,
+                F32Margin {
+                    epsilon: 0.00001,
+                    ulps: 2
+                }
+            ));
+
+            let converted_nm = m.convert(&Measurement::Length(LengthUnit::NauticalMile), value_sm);
+            assert_ne!(converted_nm, None);
+            assert!(approx_eq!(
+                f32,
+                converted_nm.unwrap(),
+                value_nm,
+                F32Margin {
+                    epsilon: 0.00001,
+                    ulps: 2
+                }
+            ));
+        }
+    }
 }

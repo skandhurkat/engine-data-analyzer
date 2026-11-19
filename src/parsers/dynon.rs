@@ -1,22 +1,25 @@
+use arrow::array::builder::ArrayBuilder;
+use arrow::datatypes::{Schema, SchemaBuilder};
 use regex::Regex;
 use spdlog::prelude::{debug, error, info, trace, warn};
+use std::collections::HashMap;
 use std::fs::File;
-use std::io::{BufRead, BufReader, Result};
+use std::io::{BufRead, BufReader};
 use std::path::Path;
-use std::sync::LazyLock;
+use std::sync::{Arc, LazyLock};
 
 pub struct ParsedData {}
 
-pub fn try_parse_dynon<P>(file_path: P) -> Result<ParsedData>
+pub fn try_parse_dynon<P>(file_path: P) -> std::io::Result<ParsedData>
 where
     P: AsRef<Path>,
 {
     let mut file_buf = open_file(file_path)?;
-    parse_header(&mut file_buf);
+    let _ = parse_header(&mut file_buf)?;
     Ok(ParsedData {})
 }
 
-fn open_file<P>(file_path: P) -> Result<BufReader<File>>
+fn open_file<P>(file_path: P) -> std::io::Result<BufReader<File>>
 where
     P: AsRef<Path>,
 {
@@ -24,14 +27,33 @@ where
     Ok(BufReader::new(file))
 }
 
-fn parse_header(file_buf: &mut BufReader<File>) {
+struct Parser {
+    schema: Arc<Schema>,
+    builders: Vec<Box<dyn ArrayBuilder>>,
+    parsers: Vec<Box<dyn Fn(&str)>>,
+    column_factory: Vec<Box<dyn Fn()>>,
+}
+
+fn parse_header(file_buf: &mut BufReader<File>) -> std::io::Result<()> {
     let mut lines = file_buf.lines();
 
     let Some(Ok(header)) = lines.next() else {
-        return;
+        return Err(std::io::Error::new(
+            std::io::ErrorKind::InvalidData,
+            "Could not read header from file",
+        ));
     };
+
     let fields = header.split(',').map(|s| s.trim());
-    for f in fields {
+
+    let mut schema_builder = SchemaBuilder::new();
+    for (i, f) in fields.enumerate() {
+        if i == 0 && f != "Session Time" {
+            return Err(std::io::Error::new(
+                std::io::ErrorKind::InvalidData,
+                "Not a Dynon file, does not start with Session Time as the first field",
+            ));
+        }
         if f == "" {
             continue;
         }
@@ -48,6 +70,7 @@ fn parse_header(file_buf: &mut BufReader<File>) {
             }
         }
     }
+    Ok(())
 }
 
 fn split_name_and_unit_for_field(field: &str) -> Option<(&str, Option<&str>)> {

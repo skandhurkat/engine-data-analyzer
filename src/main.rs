@@ -1,3 +1,6 @@
+#[macro_use]
+extern crate uom;
+
 use clap::{ArgAction, Parser};
 
 pub mod parsers;
@@ -35,5 +38,9 @@ fn main() {
 
     println!("Reading {file_path}");
 
-    let _ = try_parse_dynon(file_path);
+    let res = try_parse_dynon(file_path);
+    match res {
+        Ok(_) => {}
+        Err(error) => panic!("{error}"),
+    }
 }
