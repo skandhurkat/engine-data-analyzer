@@ -1,3 +1,4 @@
+use crate::units::*;
 use arrow::array::builder::ArrayBuilder;
 use arrow::datatypes::{Schema, SchemaBuilder};
 use regex::Regex;
@@ -63,7 +64,12 @@ fn parse_header(file_buf: &mut BufReader<File>) -> std::io::Result<()> {
         };
         match unit {
             Some(unit_str) => {
-                trace!("{field_name} ⇒ {unit_str}");
+                trace!("{field_name} = {unit_str}");
+                if let Ok(unit) = parse_unit_str(unit_str) {
+                    trace!("{field_name} ⇒ {:?}", unit);
+                } else {
+                    panic!("Not implemented: {}", unit_str)
+                }
             }
             None => {
                 trace!("{field_name} ⇒ no unit");
@@ -81,4 +87,34 @@ fn split_name_and_unit_for_field(field: &str) -> Option<(&str, Option<&str>)> {
     let field_name: &str = captures.get(1)?.as_str();
     let unit: Option<&str> = captures.get(2).map_or(None, |m| Some(m.as_str()));
     Some((field_name, unit))
+}
+
+fn parse_unit_str(unit_str: &str) -> Result<Measurement, ()> {
+    if unit_str == "deg" {
+        Ok(Measurement::Angle(AngleUnit::Degree))
+    } else if unit_str == "feet" || unit_str == "ft" {
+        Ok(Measurement::Length(LengthUnit::Foot))
+    } else if unit_str == "NM" {
+        Ok(Measurement::Length(LengthUnit::NauticalMile))
+    } else if unit_str == "knots" {
+        Ok(Measurement::Velocity(VelocityUnit::Knot))
+    } else if unit_str == "ft/min" {
+        Ok(Measurement::Velocity(VelocityUnit::FootPerMinute))
+    } else if unit_str == "deg/s" {
+        Ok(Measurement::AngularVelocity(AngularVelocityUnit::DegreePerSecond))
+    } else if unit_str == "g" {
+        Ok(Measurement::Acceleration(AccelerationUnit::StandardGravity))
+    } else if unit_str == "%" {
+        Ok(Measurement::Ratio(RatioUnit::Percent))
+    } else if unit_str == "steps" || unit_str == "bool" {
+        Ok(Measurement::Ratio(RatioUnit::Ratio))
+    } else if unit_str == "deg C" {
+        Ok(Measurement::Temperature(TemperatureUnit::DegreeCelsius))
+    } else if unit_str == "deg F" {
+        Ok(Measurement::Temperature(TemperatureUnit::DegreeFahrenheit))
+    } else if unit_str == "inHg" {
+        Ok(Measurement::Pressure(PressureUnit::InchOfMercury))
+    } else {
+        unimplemented!("Not implemented");
+    }
 }

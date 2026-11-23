@@ -51,21 +51,29 @@ macro_rules! define_units {
 }
 
 define_units!(
-#[derive(PartialEq)]
+#[derive(Debug, PartialEq)]
+RatioUnit: Ratio {
+    Ratio => uom::si::ratio::ratio,
+    Percent => uom::si::ratio::percent,
+}
+);
+
+define_units!(
+#[derive(Debug, PartialEq)]
 AccelerationUnit: Acceleration {
     StandardGravity => uom::si::acceleration::standard_gravity,
 }
 );
 
 define_units!(
-#[derive(PartialEq)]
+#[derive(Debug, PartialEq)]
 AngleUnit: Angle {
     Degree => uom::si::angle::degree,
 }
 );
 
 define_units!(
-#[derive(PartialEq)]
+#[derive(Debug, PartialEq)]
 AngularVelocityUnit: AngularVelocity {
     DegreePerSecond => uom::si::angular_velocity::degree_per_second,
     RevolutionPerMinute => uom::si::angular_velocity::revolution_per_minute,
@@ -73,22 +81,23 @@ AngularVelocityUnit: AngularVelocity {
 );
 
 define_units!(
-#[derive(PartialEq)]
+#[derive(Debug, PartialEq)]
 ElectricCurrentUnit: ElectricCurrent {
     Ampere => uom::si::electric_current::ampere,
 }
 );
 
 define_units!(
-#[derive(PartialEq)]
+#[derive(Debug, PartialEq)]
 ElectricPotentialUnit: ElectricPotential {
     Volt => uom::si::electric_potential::volt,
 }
 );
 
 define_units!(
-#[derive(PartialEq)]
+#[derive(Debug, PartialEq)]
 LengthUnit: Length {
+    Foot => uom::si::length::foot,
     Kilometer => uom::si::length::kilometer,
     StatuteMile => uom::si::length::mile,
     NauticalMile => uom::si::length::nautical_mile,
@@ -96,7 +105,7 @@ LengthUnit: Length {
 );
 
 define_units!(
-#[derive(PartialEq)]
+#[derive(Debug, PartialEq)]
 PressureUnit: Pressure {
     HectoPascal => uom::si::pressure::pascal,
     InchOfMercury => uom::si::pressure::inch_of_mercury,
@@ -105,7 +114,7 @@ PressureUnit: Pressure {
 );
 
 define_units!(
-#[derive(PartialEq)]
+#[derive(Debug, PartialEq)]
 TemperatureUnit: ThermodynamicTemperature {
     DegreeCelsius => uom::si::thermodynamic_temperature::degree_celsius,
     DegreeFahrenheit => uom::si::thermodynamic_temperature::degree_fahrenheit,
@@ -113,7 +122,7 @@ TemperatureUnit: ThermodynamicTemperature {
 );
 
 define_units!(
-#[derive(PartialEq)]
+#[derive(Debug, PartialEq)]
 VelocityUnit: Velocity {
     FootPerMinute => uom::si::velocity::foot_per_minute,
     KilometerPerHour => uom::si::velocity::kilometer_per_hour,
@@ -123,7 +132,7 @@ VelocityUnit: Velocity {
 );
 
 define_units!(
-#[derive(PartialEq)]
+#[derive(Debug, PartialEq)]
 VolumeUnit: Volume {
     Gallon => uom::si::volume::gallon,
     Liter => uom::si::volume::liter,
@@ -131,7 +140,7 @@ VolumeUnit: Volume {
 );
 
 define_units!(
-#[derive(PartialEq)]
+#[derive(Debug, PartialEq)]
 VolumeRateUnit: VolumeRate {
     GallonPerHour => gallon_per_hour,
     LiterPerHour => liter_per_hour,
@@ -144,6 +153,7 @@ macro_rules! measurement {
             $variant:ident($unit_type:ty)
         ),* $(,)?
     ) => {
+        #[derive(Debug)]
         pub enum Measurement {
             $(
                 $variant($unit_type),
@@ -172,6 +182,7 @@ macro_rules! measurement {
 }
 
 measurement! {
+    Ratio(RatioUnit),
     Acceleration(AccelerationUnit),
     Angle(AngleUnit),
     AngularVelocity(AngularVelocityUnit),
